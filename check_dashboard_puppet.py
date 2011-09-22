@@ -108,15 +108,17 @@ def get_data(column_status_name, table_name, column_node_name, node_name, conn):
     print "[ERROR] : Thanks to check if the node is available, and if the connexion information is valid."
 
 
-def end(status, message):
+def end(status, message, perfdata):
     """Exits the script with the first argument as the return code and the
        second as the message to generate output."""
 
+    perfdata = message
+
     if status == "unchanged":
-        print "OK: %s" % (message)
+        print "OK: %s | %s" % (message, perfdata)
         sys.exit(0)
     elif status == "changed":
-        print "WARNING: %s" % (message)
+        print "WARNING: %s | %s" % (message, perfdata)
         sys.exit(1)
     elif status == "failed":
         print "CRITICAL: %s" % (message)
@@ -139,5 +141,5 @@ if __name__ == "__main__":
 
   data = get_data(options.column_status_name, options.table_name, options.column_node_name, options.node_name, conn)
   mysql_disconnect(conn)
-  message = "%s %s" %(options.node_name, data)
-  end(data, message)
+  message = "%s:%s" %(options.node_name, data)
+  end(data, message, message)
