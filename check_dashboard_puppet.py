@@ -90,79 +90,40 @@ def mysql_connect(hostname, username, password, database, port):
                            passwd = password,
                            db = database,
                            port = port)
+
   return conn
 
 def mysql_disconnect(conn):
-  """disconnect to mysql(cursor, conn)"""
+  """disconnect to mysql(conn)"""
   conn.close()
-
-def value_column(report):
-  """return the value column name, to the where condition of the sql request"""
-  if report == "report_by_hostname":
-    retour = "hostname"
-  elif report == "report_by_script_name":
-    retour = "script_name"
-  elif report == "report_by_server_name":
-    retour = "server_name"
-
-  return retour
 
 def get_data(column_status_name, table_name, column_node_name, node_name, conn):
   """get data in fonction of the arguments (column_status_name, table_name, column_node_name, node_name) and the connection (conn)"""
   cursor = conn.cursor()
-#  where_column = value_column(report)
   try:
     cursor.execute ("SELECT %s FROM %s WHERE %s='%s'" %(column_status_name, table_name , column_node_name, node_name ))
     row = cursor.fetchone ()
-    print row[0]
     return row[0]
   except:
-    print "error"
+    print "[ERROR] : Thanks to check if the node is available, and if the connexion information is valid."
 
 
-def end(status, message, perfdata):
+def end(status, message):
     """Exits the script with the first argument as the return code and the
        second as the message to generate output."""
 
-    if status == OK:
-        print "OK: %s | %s" % (message, perfdata)
+    if status == "unchanged":
+        print "OK: %s" % (message)
         sys.exit(0)
-    elif status == WARNING:
-        print "WARNING: %s | %s" % (message, perfdata)
+    elif status == "changed":
+        print "WARNING: %s" % (message)
         sys.exit(1)
-    elif status == CRITICAL:
-        print "CRITICAL: %s | %s" % (message, perfdata)
+    elif status == "failed":
+        print "CRITICAL: %s" % (message)
         sys.exit(2)
     else:
-        print "UNKNOWN: %s | %s" % (message, perfdata)
+        print "UNKNOWN: %s" % (message)
         sys.exit(3)
-
-def validate_thresholds(warning, critical):
-    """Validates warning and critical thresholds in several ways."""
-
-#    if critical != -1 and warning == -2:
-#        end(UNKNOWN, "Please also set a warning value when using warning/" +
-#	             "critical thresholds!", "")
-#    if critical == -1 and warning != -2:
-#        end(UNKNOWN, "Please also set a critical value when using warning/" +
-#	             "critical thresholds!", "")
-#    if critical <= warning:
-#        end(UNKNOWN, "When using thresholds the critical value has to be " +
-#	              "higher than the warning value. Please adjust your " +
-#		      "thresholds.", "")
-
-def return_nagios_status(data, warning, critical, message):
-  """ find the nagios status before use the end methods """
-  validate_thresholds(warning, critical)
-  perfdata = "time=%s" %data
-
-  if data < warning:
-    end(OK, message, perfdata)
-  if data >= warning and data < critical:
-    end(WARNING, message, perfdata)
-  if data >= critical:
-    end(CRITICAL, message, perfdata)
-
 
 #
 # Main
@@ -175,8 +136,8 @@ if __name__ == "__main__":
                   options.database, 
                   options.port)
 
-  data = get_data(options.report, options.query, options.value, conn)
 
+  data = get_data(options.column_status_name, options.table_name, options.column_node_name, options.node_name, conn)
   mysql_disconnect(conn)
-  message = "%s:%s %s:%s" %(options.report,  options.value, options.query, data)
-  return_nagios_status(float(data), float(options.warning), float(options.critical), message)
+  message = "%s %s" %(options.node_name, data)
+  end(data, message)
